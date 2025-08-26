@@ -3,18 +3,18 @@ import React from 'react';
 import { Platform } from 'react-native';
 
 import { HapticTab } from '@/components/HapticTab';
-import { Ionicons } from '@expo/vector-icons';
 import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const { colors } = useTheme();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: colors.tint,
+        tabBarInactiveTintColor: colors.tabIconDefault,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
@@ -22,43 +22,78 @@ export default function TabLayout() {
           ios: {
             // Use a transparent background on iOS to show the blur effect
             position: 'absolute',
+            backgroundColor: colors.tabBarBackground,
           },
-          default: {},
+          default: {
+            backgroundColor: colors.tabBarBackground,
+            borderTopColor: colors.border,
+            borderTopWidth: 1,
+          },
         }),
       }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <Ionicons size={28} name="person-circle" color={color} />,
-        }}
-      />
       <Tabs.Screen
         name="discover"
         options={{
           title: 'Discover',
-          tabBarIcon: ({ color }) => <Ionicons size={28} name="navigate-circle-outline" color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              size={26}
+              name={focused ? 'flame' : 'flame-outline'}
+              color={color}
+            />
+          ),
         }}
       />
       <Tabs.Screen
-      name='people'
-      options={{
-        title: 'People',
-        tabBarIcon: ({ color }) => <Ionicons size={28} name="people-circle" color={color} />,
-      }}
+        name="people"
+        options={{
+          title: 'People',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              size={26}
+              name={focused ? 'people' : 'people-outline'}
+              color={color}
+            />
+          ),
+        }}
       />
       <Tabs.Screen
         name="likedyou"
         options={{
-          title: 'Liked You',
-          tabBarIcon: ({ color }) => <Ionicons size={28} name="heart-outline" color={color} />,
+          title: 'Likes',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              size={26}
+              name={focused ? 'heart' : 'heart-outline'}
+              color={color}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
           title: 'Chat',
-          tabBarIcon: ({ color }) => <Ionicons size={28} name="chatbubbles-outline" color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              size={26}
+              name={focused ? 'chatbubbles' : 'chatbubbles-outline'}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              size={26}
+              name={focused ? 'person' : 'person-outline'}
+              color={color}
+            />
+          ),
         }}
       />
       
