@@ -4,16 +4,17 @@ import { BorderRadius, FontSizes, Shadows, Spacing } from '@/constants/Colors';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Dimensions,
-    FlatList,
-    Image,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Dimensions,
+  FlatList,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -82,8 +83,7 @@ export default function LikedYouScreen() {
   const [isPremium, setIsPremium] = useState(false); // Mock premium status
 
   const handleUpgradeToPremium = () => {
-    // TODO: Navigate to premium subscription
-    setIsPremium(true); // Mock upgrade for demo
+    router.push('/premium');
   };
 
   const handleLikeBack = (userId: string) => {
@@ -96,7 +96,7 @@ export default function LikedYouScreen() {
     // TODO: Handle pass action
   };
 
-  const renderLikeCard = ({ item, index }: { item: any; index: number }) => (
+  const renderLikeCard = ({ item }: { item: any; index: number }) => (
     <View style={[styles.likeCard, { width: CARD_WIDTH }]}>
       <SwipeCard style={styles.cardContainer}>
         <View style={styles.imageContainer}>
@@ -178,9 +178,9 @@ export default function LikedYouScreen() {
       {!isPremium && (
         <>
           {/* Premium Upsell Banner */}
-          <Card style={[styles.premiumBanner, { backgroundColor: colors.primary }]}>
+          <Card style={styles.premiumBanner}>
             <LinearGradient
-              colors={colors.gradients.primary}
+              colors={colors.gradients.primary as any}
               style={styles.bannerGradient}
             >
               <View style={styles.bannerContent}>
@@ -197,8 +197,7 @@ export default function LikedYouScreen() {
                   onPress={handleUpgradeToPremium}
                   variant="primary"
                   size="small"
-                  style={[styles.upgradeButton, { backgroundColor: '#FFFFFF' }]}
-                  textStyle={{ color: colors.primary }}
+                  style={styles.upgradeButton}
                 />
               </View>
             </LinearGradient>
@@ -297,6 +296,7 @@ const styles = StyleSheet.create({
     marginVertical: Spacing.md,
     padding: 0,
     overflow: 'hidden',
+    backgroundColor: '#FF6B6B',
   },
   bannerGradient: {
     padding: Spacing.lg,
@@ -323,6 +323,7 @@ const styles = StyleSheet.create({
   },
   upgradeButton: {
     minWidth: 80,
+    backgroundColor: '#FFFFFF',
   },
   featuresCard: {
     marginHorizontal: Spacing.xl,

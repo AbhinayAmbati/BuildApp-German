@@ -3,6 +3,7 @@ import { Card, ProfileCard } from '@/components/ui/Card';
 import { BorderRadius, FontSizes, Shadows, Spacing } from '@/constants/Colors';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
     Dimensions,
@@ -177,7 +178,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.headerButton, { backgroundColor: colors.surface }]}
-            onPress={() => {/* TODO: Navigate to settings */}}
+            onPress={() => router.push('/settings')}
           >
             <Ionicons name="settings-outline" size={20} color={colors.text} />
           </TouchableOpacity>
@@ -281,6 +282,75 @@ export default function ProfileScreen() {
             </Card>
           ))}
         </View>
+
+        {/* Settings Section */}
+        <Card style={styles.settingsCard}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Settings & Preferences
+          </Text>
+
+          <View style={styles.settingsList}>
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => router.push('/settings')}
+            >
+              <View style={styles.settingLeft}>
+                <View style={[styles.settingIcon, { backgroundColor: colors.primary + '20' }]}>
+                  <Ionicons name="settings-outline" size={20} color={colors.primary} />
+                </View>
+                <Text style={[styles.settingText, { color: colors.text }]}>
+                  App Settings
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => router.push('/premium')}
+            >
+              <View style={styles.settingLeft}>
+                <View style={[styles.settingIcon, { backgroundColor: colors.secondary + '20' }]}>
+                  <Ionicons name="star-outline" size={20} color={colors.secondary} />
+                </View>
+                <Text style={[styles.settingText, { color: colors.text }]}>
+                  Get Premium
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => console.log('Privacy settings')}
+            >
+              <View style={styles.settingLeft}>
+                <View style={[styles.settingIcon, { backgroundColor: colors.info + '20' }]}>
+                  <Ionicons name="shield-outline" size={20} color={colors.info} />
+                </View>
+                <Text style={[styles.settingText, { color: colors.text }]}>
+                  Privacy & Safety
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => console.log('Help & Support')}
+            >
+              <View style={styles.settingLeft}>
+                <View style={[styles.settingIcon, { backgroundColor: colors.success + '20' }]}>
+                  <Ionicons name="help-circle-outline" size={20} color={colors.success} />
+                </View>
+                <Text style={[styles.settingText, { color: colors.text }]}>
+                  Help & Support
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+        </Card>
 
         {/* Bottom spacing */}
         <View style={{ height: 100 }} />
@@ -483,5 +553,33 @@ const styles = StyleSheet.create({
   promptAnswer: {
     fontSize: FontSizes.md,
     lineHeight: 22,
+  },
+  settingsCard: {
+    marginBottom: Spacing.lg,
+  },
+  settingsList: {
+    gap: Spacing.sm,
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.md,
+  },
+  settingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  settingIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingText: {
+    fontSize: FontSizes.md,
+    fontWeight: '600',
   },
 });

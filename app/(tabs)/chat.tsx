@@ -1,9 +1,8 @@
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { BorderRadius, FontSizes, Shadows, Spacing } from '@/constants/Colors';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
     FlatList,
@@ -146,7 +145,7 @@ export default function ChatScreen() {
   const renderChatItem = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={[styles.chatItem, { backgroundColor: colors.surface }]}
-      onPress={() => {/* TODO: Navigate to individual chat */}}
+      onPress={() => router.push(`/chat/${item.id}`)}
     >
       <View style={styles.chatAvatar}>
         <Image source={{ uri: item.user.photo }} style={styles.avatarImage} />

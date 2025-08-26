@@ -1,734 +1,667 @@
-"use client"
-
-import type React from "react"
-import { useCallback, useState } from "react"
-import { View, Text, StyleSheet, Dimensions, Image, Alert, StatusBar, Platform } from "react-native"
-import { PanGestureHandler, GestureHandlerRootView } from "react-native-gesture-handler"
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  useAnimatedGestureHandler,
-  withSpring,
-  withTiming,
-  runOnJS,
-  interpolate,
-  Extrapolate,
-} from "react-native-reanimated"
-
+import { Card } from '@/components/ui/Card';
+import { MatchModal } from '@/components/ui/MatchModal';
+import { BorderRadius, FontSizes, Shadows, Spacing } from '@/constants/Colors';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useRef, useState } from 'react';
+import {
+    Alert,
+    Dimensions,
+    Image,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
+import Swiper from 'react-native-deck-swiper';
 
+const { width, height } = Dimensions.get('window');
+const CARD_HEIGHT = height * 0.75;
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window")
-const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25
-const CARD_WIDTH = SCREEN_WIDTH * 0.92
-const CARD_HEIGHT = SCREEN_HEIGHT * 0.82
-
-// Status indicator component
-const OnlineStatus = ({ lastActive }: { lastActive: string }) => {
-  const isOnline = lastActive.includes("minutes") || lastActive.includes("hour")
-  return (
-    <View style={styles.statusContainer}>
-      <View style={[styles.statusDot, { backgroundColor: isOnline ? "#4CAF50" : "#FFC107" }]} />
-      <Text style={styles.statusText}>{isOnline ? "Online" : "Recently active"}</Text>
-    </View>
-  )
-}
-
-interface Profile {
-  id: number
-  name: string
-  age: number
-  image: string
-  location: string
-  bio: string
-  interests: string[]
-  matches: number
-  messages: number
-  profileViews: number
-  lastActive: string
-  profession: string
-  education: string
-  height: string
-  distance: string
-}
-
-interface SwipeableCardProps {
-  profile: Profile
-  index: number
-  totalCards: number
-  onSwipeLeft: (id: number) => void
-  onSwipeRight: (id: number) => void
-  isTop: boolean
-}
-
-const SwipeableCard: React.FC<SwipeableCardProps> = ({
-  profile,
-  index,
-  totalCards,
-  onSwipeLeft,
-  onSwipeRight,
-  isTop,
-}) => {
-  const translateX = useSharedValue(0)
-  const translateY = useSharedValue(0)
-  const scale = useSharedValue(1)
-  const opacity = useSharedValue(1)
-  const rotation = useSharedValue(0)
-
-  const gestureHandler = useAnimatedGestureHandler({
-    onStart: () => {
-      if (!isTop) return
-      scale.value = withSpring(1.02, { damping: 15, stiffness: 200 })
+// Enhanced user profiles with comprehensive information
+const mockProfiles = [
+  {
+    id: '1',
+    name: 'Emma',
+    age: 25,
+    photos: [
+      'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=600&fit=crop',
+    ],
+    bio: 'Adventure seeker and coffee enthusiast ☕️ Love exploring new places and trying different cuisines.',
+    location: 'San Francisco, CA',
+    distance: '2 miles away',
+    profession: 'Product Designer',
+    company: 'Tech Startup',
+    education: 'Stanford University',
+    height: '5\'6"',
+    interests: ['Photography', 'Hiking', 'Coffee', 'Travel', 'Art', 'Yoga'],
+    lifestyle: {
+      drinking: 'Socially',
+      smoking: 'Never',
+      workout: 'Often',
+      pets: 'Dog lover',
+      kids: 'Want someday',
     },
-    onActive: (event) => {
-      if (!isTop) return
-      translateX.value = event.translationX
-      translateY.value = event.translationY * 0.05
-
-      // Smooth rotation
-      rotation.value = interpolate(event.translationX, [-SCREEN_WIDTH, 0, SCREEN_WIDTH], [-8, 0, 8], Extrapolate.CLAMP)
-    },
-    onEnd: (event) => {
-      if (!isTop) return
-
-      const { translationX, velocityX } = event
-      const threshold = SWIPE_THRESHOLD
-
-      if (Math.abs(translationX) > threshold || Math.abs(velocityX) > 600) {
-        const direction = translationX > 0 ? "right" : "left"
-        const targetX = direction === "right" ? SCREEN_WIDTH * 1.2 : -SCREEN_WIDTH * 1.2
-
-        translateX.value = withTiming(targetX, { duration: 350 })
-        translateY.value = withTiming(-80, { duration: 350 })
-        opacity.value = withTiming(0, { duration: 350 })
-        scale.value = withTiming(0.85, { duration: 350 })
-        rotation.value = withTiming(direction === "right" ? 12 : -12, { duration: 350 })
-
-        runOnJS(direction === "right" ? onSwipeRight : onSwipeLeft)(profile.id)
-      } else {
-        translateX.value = withSpring(0, { damping: 15, stiffness: 150 })
-        translateY.value = withSpring(0, { damping: 15, stiffness: 150 })
-        scale.value = withSpring(1, { damping: 15, stiffness: 200 })
-        rotation.value = withSpring(0, { damping: 15, stiffness: 150 })
+    prompts: [
+      {
+        question: 'My ideal Sunday',
+        answer: 'Brunch with friends, hiking in nature, and cozy movie nights'
+      },
+      {
+        question: 'I\'m looking for',
+        answer: 'Someone genuine who loves adventure and deep conversations'
       }
+    ],
+    verified: true,
+    isOnline: true,
+    lastActive: '5 minutes ago',
+    mutualFriends: 3,
+    mutualInterests: ['Photography', 'Travel'],
+  },
+  {
+    id: '2',
+    name: 'Jessica',
+    age: 27,
+    photos: [
+      'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=400&h=600&fit=crop',
+    ],
+    bio: 'Yoga instructor by day, foodie by night 🧘‍♀️🍕 Passionate about wellness and helping others.',
+    location: 'Oakland, CA',
+    distance: '5 miles away',
+    profession: 'Yoga Instructor',
+    company: 'Mindful Studio',
+    education: 'UC Berkeley',
+    height: '5\'4"',
+    interests: ['Yoga', 'Meditation', 'Cooking', 'Dogs', 'Nature', 'Wellness'],
+    lifestyle: {
+      drinking: 'Rarely',
+      smoking: 'Never',
+      workout: 'Daily',
+      pets: 'Has a dog',
+      kids: 'Open to it',
     },
-  })
-
-  const animatedStyle = useAnimatedStyle(() => {
-    const stackScale = isTop ? scale.value : 0.96 - index * 0.01
-    const stackTranslateY = isTop ? translateY.value : index * 4
-    const stackOpacity = isTop ? opacity.value : Math.max(0.4, 1 - index * 0.12)
-
-    return {
-      transform: [
-        { translateX: translateX.value },
-        { translateY: stackTranslateY },
-        { rotate: `${rotation.value}deg` },
-        { scale: stackScale },
-      ],
-      opacity: stackOpacity,
-      zIndex: totalCards - index,
-    }
-  })
-
-  const likeIndicatorStyle = useAnimatedStyle(() => {
-    const likeOpacity = interpolate(translateX.value, [0, SWIPE_THRESHOLD * 0.5], [0, 1], Extrapolate.CLAMP)
-
-    const likeScale = interpolate(translateX.value, [0, SWIPE_THRESHOLD], [0.7, 1.1], Extrapolate.CLAMP)
-
-    return {
-      opacity: likeOpacity,
-      transform: [{ scale: likeScale }],
-    }
-  })
-
-  const nopeIndicatorStyle = useAnimatedStyle(() => {
-    const nopeOpacity = interpolate(translateX.value, [-SWIPE_THRESHOLD * 0.5, 0], [1, 0], Extrapolate.CLAMP)
-
-    const nopeScale = interpolate(translateX.value, [-SWIPE_THRESHOLD, 0], [1.1, 0.7], Extrapolate.CLAMP)
-
-    return {
-      opacity: nopeOpacity,
-      transform: [{ scale: nopeScale }],
-    }
-  })
-
-  return (
-    <PanGestureHandler onGestureEvent={gestureHandler} onHandlerStateChange={gestureHandler} enabled={isTop}>
-      <Animated.View style={[styles.card, animatedStyle]}>
-        {/* Main Image */}
-        <Image source={{ uri: profile.image }} style={styles.cardImage} resizeMode="cover" />
-
-        {/* Gradient Overlay */}
-        <View style={styles.gradientOverlay} />
-
-        {/* Like Indicator */}
-        <Animated.View style={[styles.likeContainer, likeIndicatorStyle]}>
-          <View style={styles.likeIconWrapper}>
-            <Ionicons size={28} name="checkmark" color="white" />
-          </View>
-          <Text style={styles.likeText}>LIKE</Text>
-        </Animated.View>
-
-        {/* Nope Indicator */}
-        <Animated.View style={[styles.nopeContainer, nopeIndicatorStyle]}>
-          <View style={styles.nopeIconWrapper}>
-            <Ionicons size={28} name="close-circle" color="white" />
-          </View>
-          <Text style={styles.nopeText}>PASS</Text>
-        </Animated.View>
-
-        {/* Profile Info */}
-        <View style={styles.profileInfo}>
-          {/* Header with name and status */}
-          <View style={styles.profileHeader}>
-            <View style={styles.nameContainer}>
-              <Text style={styles.profileName}>{profile.name}</Text>
-              <Text style={styles.profileAge}>{profile.age}</Text>
-            </View>
-            <OnlineStatus lastActive={profile.lastActive} />
-          </View>
-
-          {/* Location and Distance */}
-          <View style={styles.locationContainer}>
-            <Text style={styles.locationText}>📍 {profile.location}</Text>
-            <Text style={styles.distanceText}>{profile.distance} away</Text>
-          </View>
-
-          {/* Profession and Education */}
-          <View style={styles.detailsContainer}>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailIcon}>💼</Text>
-              <Text style={styles.detailText}>{profile.profession}</Text>
-            </View>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailIcon}>🎓</Text>
-              <Text style={styles.detailText}>{profile.education}</Text>
-            </View>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailIcon}>📏</Text>
-              <Text style={styles.detailText}>{profile.height}</Text>
-            </View>
-          </View>
-
-          {/* Bio */}
-          <Text style={styles.profileBio}>{profile.bio}</Text>
-
-          {/* Interests */}
-          <View style={styles.interestsContainer}>
-            {profile.interests.slice(0, 6).map((interest, idx) => (
-              <View key={idx} style={styles.interestTag}>
-                <Text style={styles.interestText}>{interest}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Stats */}
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{profile.matches}</Text>
-              <Text style={styles.statLabel}>Matches</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{profile.messages}</Text>
-              <Text style={styles.statLabel}>Messages</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{Math.floor(profile.profileViews / 100)}k</Text>
-              <Text style={styles.statLabel}>Views</Text>
-            </View>
-          </View>
-        </View>
-      </Animated.View>
-    </PanGestureHandler>
-  )
-}
-
-const People: React.FC = () => {
-  const [profiles, setProfiles] = useState<Profile[]>([
-    {
-      id: 1,
-      name: "Sruthi Hasan",
-      age: 25,
-      image: "https://w0.peakpx.com/wallpaper/251/952/HD-wallpaper-shruti-hassan-shruti-haasan.jpg",
-      location: "Chennai, Tamil Nadu",
-      bio: "Software engineer who loves to code and explore new technologies. Always up for an adventure! 🚀",
-      interests: ["Coding", "Travel", "Photography", "Music", "Coffee", "Hiking"],
-      matches: 147,
-      messages: 23,
-      profileViews: 892,
-      lastActive: "2 hours ago",
-      profession: "Software Engineer",
-      education: "IIT Madras",
-      height: "5'6\"",
-      distance: "2.5 km",
-    },
-    {
-      id: 2,
-      name: "Samantha",
-      age: 28,
-      image: "https://i.pinimg.com/736x/cc/ee/7c/ccee7c674f6f8383916c934eec3ec370.jpg",
-      location: "Mumbai, Maharashtra",
-      bio: "Creative designer with a passion for art and good coffee. Let's create something beautiful together! ☕️",
-      interests: ["Design", "Art", "Coffee", "Yoga", "Reading", "Movies"],
-      matches: 203,
-      messages: 45,
-      profileViews: 1247,
-      lastActive: "30 minutes ago",
-      profession: "UX Designer",
-      education: "NIFT Mumbai",
-      height: "5'4\"",
-      distance: "1.2 km",
-    },
-    {
-      id: 3,
-      name: "Kajal Agrawal",
-      age: 26,
-      image: "https://i.pinimg.com/1200x/c9/70/07/c970077a77da769fc664c68072126970.jpg",
-      location: "Delhi, Delhi",
-      bio: "Marketing professional who believes in living life to the fullest. Foodie and travel enthusiast! 🌍",
-      interests: ["Marketing", "Food", "Travel", "Dancing", "Fitness", "Wine"],
-      matches: 178,
-      messages: 67,
-      profileViews: 1156,
-      lastActive: "5 minutes ago",
-      profession: "Marketing Manager",
-      education: "Delhi University",
-      height: "5'5\"",
-      distance: "3.8 km",
-    },
-    {
-      id: 4,
-      name: "Regina Cassandra",
-      age: 29,
-      image: "https://static.toiimg.com/thumb/imgsize-23456,msid-121378489,width-600,resizemode-4/121378489.jpg",
-      location: "Mumbai, Maharashtra",
-      bio: "Film enthusiast and aspiring director. Looking for someone who shares my love for cinema! 🎬",
-      interests: ["Films", "Writing", "Theater", "Books", "Music", "Art"],
-      matches: 234,
-      messages: 89,
-      profileViews: 1678,
-      lastActive: "15 minutes ago",
-      profession: "Film Director",
-      education: "FTII Pune",
-      height: "5'7\"",
-      distance: "4.2 km",
-    },
-    {
-      id: 5,
-      name: "Ashika Ranganathan",
-      age: 24,
-      image: "https://i.pinimg.com/736x/8f/53/e8/8f53e83ddf9dfac26cfa1cc7848ad94b.jpg",
-      location: "Kolkata, West Bengal",
-      bio: "Data scientist by day, dancer by night. Love solving problems and expressing itself through movement! 💃",
-      interests: ["Data Science", "Dancing", "Fitness", "Cooking", "AI", "Tech"],
-      matches: 156,
-      messages: 34,
-      profileViews: 743,
-      lastActive: "1 hour ago",
-      profession: "Data Scientist",
-      education: "ISI Kolkata",
-      height: "5'3\"",
-      distance: "6.1 km",
-    },
-  ])
-
-  const handleSwipeLeft = useCallback(
-    (profileId: number) => {
-      const profile = profiles.find((p) => p.id === profileId)
-      if (profile) {
-        console.log(`Passed on ${profile.name}`)
-        setTimeout(() => {
-          setProfiles((prev) => prev.filter((p) => p.id !== profileId))
-          if (profiles.length <= 1) {
-            Alert.alert(
-              "No more profiles! 🎉",
-              "You've seen all available profiles. Check back later for more matches!",
-              [{ text: "Got it!" }],
-            )
-          }
-        }, 400)
+    prompts: [
+      {
+        question: 'Fun fact about me',
+        answer: 'I can do a handstand for 2 minutes straight!'
       }
-    },
-    [profiles],
-  )
+    ],
+    verified: false,
+    isOnline: false,
+    lastActive: '2 hours ago',
+    mutualFriends: 1,
+    mutualInterests: ['Nature', 'Dogs'],
+  },
+];
 
-  const handleSwipeRight = useCallback(
-    (profileId: number) => {
-      const profile = profiles.find((p) => p.id === profileId)
-      if (profile) {
-        Alert.alert(
-          "💕 It's a Match!",
-          `You and ${profile.name} liked each other! Start a conversation and see where it goes!`,
-          [
-            { text: "💬 Send Message", style: "default" },
-            { text: "👋 Keep Swiping", style: "cancel" },
-          ],
-        )
-        setTimeout(() => {
-          setProfiles((prev) => prev.filter((p) => p.id !== profileId))
-          if (profiles.length <= 1) {
-            Alert.alert(
-              "No more profiles! 🎉",
-              "You've seen all available profiles. Check back later for more matches!",
-              [{ text: "Got it!" }],
-            )
-          }
-        }, 400)
-      }
-    },
-    [profiles],
-  )
+export default function PeopleScreen() {
+  const { colors } = useTheme();
+  const [cardIndex, setCardIndex] = useState(0);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [showMatchModal, setShowMatchModal] = useState(false);
+  const [matchedUser, setMatchedUser] = useState<any>(null);
+  const swipeRef = useRef<any>(null);
 
-  const visibleProfiles = profiles.slice(0, 3)
+  const handleSwipeLeft = (cardIndex: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    console.log('Passed on:', mockProfiles[cardIndex]?.name);
+    setCurrentPhotoIndex(0); // Reset photo index for next card
+  };
 
-  return (
-    <GestureHandlerRootView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
+  const handleSwipeRight = (cardIndex: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>People</Text>
-      </View>
+    const user = mockProfiles[cardIndex];
+    if (!user) return;
 
-      {visibleProfiles.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>🎉</Text>
-          <Text style={styles.emptyText}>All caught up!</Text>
-          <Text style={styles.emptySubText}>Check back later for new profiles</Text>
-        </View>
-      ) : (
-        <View style={styles.cardStack}>
-          {visibleProfiles.map((profile, index) => (
-            <SwipeableCard
-              key={profile.id}
-              profile={profile}
-              index={index}
-              totalCards={visibleProfiles.length}
-              onSwipeLeft={handleSwipeLeft}
-              onSwipeRight={handleSwipeRight}
-              isTop={index === 0}
+    // Simulate match (30% chance for demo)
+    const isMatch = Math.random() > 0.7;
+
+    if (isMatch) {
+      setMatchedUser(user);
+      setShowMatchModal(true);
+    } else {
+      Alert.alert('Liked! 💕', `You liked ${user.name}!`);
+    }
+
+    setCurrentPhotoIndex(0); // Reset photo index for next card
+  };
+
+  const handleSwipeTop = (cardIndex: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    const user = mockProfiles[cardIndex];
+    Alert.alert('Super Like! ⭐', `You super liked ${user.name}!`);
+    setCurrentPhotoIndex(0); // Reset photo index for next card
+  };
+
+  const handlePhotoTap = (side: 'left' | 'right') => {
+    const currentUser = mockProfiles[cardIndex];
+    if (!currentUser) return;
+
+    if (side === 'right' && currentPhotoIndex < currentUser.photos.length - 1) {
+      setCurrentPhotoIndex(currentPhotoIndex + 1);
+    } else if (side === 'left' && currentPhotoIndex > 0) {
+      setCurrentPhotoIndex(currentPhotoIndex - 1);
+    }
+  };
+
+  const handleSendMessage = () => {
+    setShowMatchModal(false);
+    Alert.alert('Message', 'Opening chat...');
+  };
+
+  const handleLike = () => {
+    swipeRef.current?.swipeRight();
+  };
+
+  const handlePass = () => {
+    swipeRef.current?.swipeLeft();
+  };
+
+  const handleSuperLike = () => {
+    swipeRef.current?.swipeTop();
+  };
+
+  const renderCard = (user: any, index: number) => {
+    return (
+      <View key={user.id} style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+        <View style={styles.photoSection}>
+          <View style={styles.photoContainer}>
+            {/* Left tap area */}
+            <TouchableOpacity
+              style={[styles.photoTapArea, styles.leftTapArea]}
+              onPress={() => handlePhotoTap('left')}
+              activeOpacity={1}
             />
-          ))}
-        </View>
-      )}
 
-      {/* Instructions */}
-      <View style={styles.instructionsContainer}>
-        <Text style={styles.instructionsText}>Swipe right to like • Swipe left to pass</Text>
+            {/* Right tap area */}
+            <TouchableOpacity
+              style={[styles.photoTapArea, styles.rightTapArea]}
+              onPress={() => handlePhotoTap('right')}
+              activeOpacity={1}
+            />
+
+            <Image
+              source={{ uri: user.photos[currentPhotoIndex] || user.photos[0] }}
+              style={styles.photo}
+              resizeMode="cover"
+            />
+
+            {/* Photo indicators */}
+            {user.photos.length > 1 && (
+              <View style={styles.photoIndicators}>
+                {user.photos.map((_: any, photoIndex: number) => (
+                  <View
+                    key={photoIndex}
+                    style={[
+                      styles.indicator,
+                      {
+                        backgroundColor: photoIndex === currentPhotoIndex
+                          ? '#FFFFFF'
+                          : 'rgba(255, 255, 255, 0.5)',
+                      }
+                    ]}
+                  />
+                ))}
+              </View>
+            )}
+
+            {/* Online status */}
+            {user.isOnline && (
+              <View style={[styles.onlineStatus, { backgroundColor: colors.success }]}>
+                <Text style={styles.onlineText}>Online</Text>
+              </View>
+            )}
+
+            {/* Verification badge */}
+            {user.verified && (
+              <View style={[styles.verificationBadge, { backgroundColor: colors.primary }]}>
+                <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+              </View>
+            )}
+
+            {/* Gradient overlay */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.3)']}
+              style={styles.gradientOverlay}
+            />
+          </View>
+        </View>
+
+        {/* Scrollable Content Section */}
+        <ScrollView
+          style={styles.contentSection}
+          showsVerticalScrollIndicator={false}
+          bounces={true}
+        >
+          {/* Basic Info */}
+          <View style={styles.basicInfo}>
+            <View style={styles.nameRow}>
+              <Text style={[styles.name, { color: colors.text }]}>
+                {user.name}, {user.age}
+              </Text>
+              {user.mutualFriends > 0 && (
+                <View style={[styles.mutualBadge, { backgroundColor: colors.secondary + '20' }]}>
+                  <Ionicons name="people" size={12} color={colors.secondary} />
+                  <Text style={[styles.mutualText, { color: colors.secondary }]}>
+                    {user.mutualFriends}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.locationRow}>
+              <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
+              <Text style={[styles.location, { color: colors.textSecondary }]}>
+                {user.distance} • {user.location}
+              </Text>
+            </View>
+
+            <Text style={[styles.bio, { color: colors.text }]}>
+              {user.bio}
+            </Text>
+          </View>
+
+          {/* Professional Info */}
+          <Card style={styles.infoCard}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Professional</Text>
+            <View style={styles.infoList}>
+              <View style={styles.infoItem}>
+                <Ionicons name="briefcase-outline" size={18} color={colors.textSecondary} />
+                <Text style={[styles.infoText, { color: colors.text }]}>
+                  {user.profession} at {user.company}
+                </Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="school-outline" size={18} color={colors.textSecondary} />
+                <Text style={[styles.infoText, { color: colors.text }]}>
+                  {user.education}
+                </Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="resize-outline" size={18} color={colors.textSecondary} />
+                <Text style={[styles.infoText, { color: colors.text }]}>
+                  {user.height}
+                </Text>
+              </View>
+            </View>
+          </Card>
+
+          {/* Bottom spacing for action buttons */}
+          <View style={{ height: 120 }} />
+        </ScrollView>
       </View>
-    </GestureHandlerRootView>
-  )
+    );
+  };
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
+        <TouchableOpacity
+          style={[styles.headerButton, { backgroundColor: colors.surface }]}
+          onPress={() => {/* TODO: Open filters */}}
+        >
+          <Ionicons name="options-outline" size={20} color={colors.text} />
+        </TouchableOpacity>
+
+        <View style={styles.headerCenter}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>People</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+            Swipe to explore profiles
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.headerButton, { backgroundColor: colors.surface }]}
+          onPress={() => {/* TODO: Open profile details */}}
+        >
+          <Ionicons name="information-circle-outline" size={20} color={colors.text} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Swipeable Cards */}
+      <View style={styles.cardContainer}>
+        <Swiper
+          ref={swipeRef}
+          cards={mockProfiles}
+          renderCard={renderCard}
+          onSwipedLeft={handleSwipeLeft}
+          onSwipedRight={handleSwipeRight}
+          onSwipedTop={handleSwipeTop}
+          onSwipedAll={() => {
+            Alert.alert('No more profiles', 'Check back later for new people!');
+          }}
+          cardIndex={cardIndex}
+          onSwiped={(cardIndex) => {
+            setCardIndex(cardIndex + 1);
+            setCurrentPhotoIndex(0);
+          }}
+          backgroundColor={'transparent'}
+          stackSize={3}
+          stackSeparation={15}
+          animateOverlayLabelsOpacity
+          animateCardOpacity
+          swipeBackCard
+          disableBottomSwipe
+          overlayLabels={{
+            left: {
+              title: 'PASS',
+              style: {
+                label: {
+                  backgroundColor: colors.error,
+                  borderColor: colors.error,
+                  color: '#FFFFFF',
+                  borderWidth: 1,
+                  fontSize: 24,
+                  fontWeight: 'bold',
+                  padding: 10,
+                  borderRadius: 10,
+                },
+                wrapper: {
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                  justifyContent: 'flex-start',
+                  marginTop: 30,
+                  marginLeft: -30,
+                },
+              },
+            },
+            right: {
+              title: 'LIKE',
+              style: {
+                label: {
+                  backgroundColor: colors.success,
+                  borderColor: colors.success,
+                  color: '#FFFFFF',
+                  borderWidth: 1,
+                  fontSize: 24,
+                  fontWeight: 'bold',
+                  padding: 10,
+                  borderRadius: 10,
+                },
+                wrapper: {
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  justifyContent: 'flex-start',
+                  marginTop: 30,
+                  marginLeft: 30,
+                },
+              },
+            },
+            top: {
+              title: 'SUPER LIKE',
+              style: {
+                label: {
+                  backgroundColor: colors.info,
+                  borderColor: colors.info,
+                  color: '#FFFFFF',
+                  borderWidth: 1,
+                  fontSize: 20,
+                  fontWeight: 'bold',
+                  padding: 10,
+                  borderRadius: 10,
+                },
+                wrapper: {
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                },
+              },
+            },
+          }}
+        />
+      </View>
+
+      {/* Action Buttons */}
+      <View style={styles.actionButtons}>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.passButton, { backgroundColor: colors.error }]}
+          onPress={handlePass}
+        >
+          <Ionicons name="close" size={28} color="#FFFFFF" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionButton, styles.superLikeButton, { backgroundColor: colors.info }]}
+          onPress={handleSuperLike}
+        >
+          <Ionicons name="star" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionButton, styles.likeButton, { backgroundColor: colors.success }]}
+          onPress={handleLike}
+        >
+          <Ionicons name="heart" size={28} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Match Modal */}
+      <MatchModal
+        visible={showMatchModal}
+        onClose={() => setShowMatchModal(false)}
+        onSendMessage={handleSendMessage}
+        userPhoto="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"
+        matchPhoto={matchedUser?.photos[0] || ''}
+        matchName={matchedUser?.name || ''}
+      />
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0a0a0a",
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 24,
-    paddingTop: Platform.OS === "ios" ? 60 : 40,
-    paddingBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadows.light,
+  },
+  headerCenter: {
+    alignItems: 'center',
   },
   headerTitle: {
-    color: "white",
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 20,
+    fontSize: FontSizes.xl,
+    fontWeight: 'bold',
   },
-  profileCounter: {
-    backgroundColor: "rgba(255,255,255,0.1)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
-  },
-  counterText: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  cardStack: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 16,
-  },
-  card: {
-    position: "absolute",
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    borderRadius: 24,
-    backgroundColor: "#1a1a1a",
-    overflow: "hidden",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 16 },
-        shadowOpacity: 0.4,
-        shadowRadius: 24,
-      },
-      android: {
-        elevation: 16,
-      },
-    }),
-  },
-  cardImage: {
-    width: "100%",
-    height: "60%",
-  },
-  gradientOverlay: {
-    position: "absolute",
-    top: "50%",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.6)",
-  },
-  likeContainer: {
-    position: "absolute",
-    top: "15%",
-    right: 20,
-    alignItems: "center",
-    zIndex: 10,
-  },
-  nopeContainer: {
-    position: "absolute",
-    top: "15%",
-    left: 20,
-    alignItems: "center",
-    zIndex: 10,
-  },
-  likeIconWrapper: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "rgba(76, 175, 80, 0.9)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#4CAF50",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  nopeIconWrapper: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "rgba(244, 67, 54, 0.9)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#F44336",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  likeText: {
-    color: "#4CAF50",
-    fontSize: 14,
-    fontWeight: "bold",
-    backgroundColor: "rgba(76, 175, 80, 0.2)",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#4CAF50",
-  },
-  nopeText: {
-    color: "#F44336",
-    fontSize: 14,
-    fontWeight: "bold",
-    backgroundColor: "rgba(244, 67, 54, 0.2)",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#F44336",
-  },
-  profileInfo: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 24,
-  },
-  profileHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  nameContainer: {
-    flexDirection: "row",
-    alignItems: "baseline",
-  },
-  profileName: {
-    color: "white",
-    fontSize: 28,
-    fontWeight: "bold",
-    marginRight: 8,
-  },
-  profileAge: {
-    color: "white",
-    fontSize: 24,
-    fontWeight: "300",
-  },
-  statusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.1)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  statusText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  locationContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  locationText: {
-    color: "#ddd",
-    fontSize: 16,
-  },
-  distanceText: {
-    color: "#999",
-    fontSize: 14,
-  },
-  detailsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  detailItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  detailIcon: {
-    fontSize: 14,
-    marginRight: 6,
-  },
-  detailText: {
-    color: "#ccc",
-    fontSize: 13,
-    flex: 1,
-  },
-  profileBio: {
-    color: "white",
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 16,
-  },
-  interestsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 16,
-  },
-  interestTag: {
-    backgroundColor: "rgba(255,255,255,0.15)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
-  },
-  interestText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 16,
-    paddingVertical: 12,
-  },
-  statItem: {
-    alignItems: "center",
-  },
-  statNumber: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  statLabel: {
-    color: "#999",
-    fontSize: 12,
+  headerSubtitle: {
+    fontSize: FontSizes.sm,
     marginTop: 2,
   },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: "rgba(255,255,255,0.1)",
-  },
-  instructionsContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: Platform.OS === "ios" ? 40 : 20,
-    alignItems: "center",
-  },
-  instructionsText: {
-    color: "#999",
-    fontSize: 14,
-    textAlign: "center",
-  },
-  emptyContainer: {
+  cardContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+  card: {
+    width: width - (Spacing.lg * 2),
+    height: CARD_HEIGHT,
+    borderRadius: BorderRadius.lg,
+    overflow: 'hidden',
+    ...Shadows.heavy,
   },
-  emptyText: {
-    color: "white",
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 8,
+  photoSection: {
+    height: '60%',
+    position: 'relative',
   },
-  emptySubText: {
-    color: "#999",
-    fontSize: 16,
-    textAlign: "center",
+  photoContainer: {
+    flex: 1,
+    position: 'relative',
   },
-})
-
-export default People
+  photoTapArea: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: '50%',
+    zIndex: 10,
+  },
+  leftTapArea: {
+    left: 0,
+  },
+  rightTapArea: {
+    right: 0,
+  },
+  photo: {
+    width: '100%',
+    height: '100%',
+  },
+  photoIndicators: {
+    position: 'absolute',
+    top: Spacing.md,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+  },
+  indicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  onlineStatus: {
+    position: 'absolute',
+    top: Spacing.md,
+    left: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+  },
+  onlineText: {
+    fontSize: FontSizes.xs,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  verificationBadge: {
+    position: 'absolute',
+    top: Spacing.md,
+    right: Spacing.md,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadows.medium,
+  },
+  gradientOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '30%',
+  },
+  contentSection: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  basicInfo: {
+    padding: Spacing.lg,
+    paddingBottom: Spacing.md,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
+  name: {
+    fontSize: FontSizes.xxl,
+    fontWeight: 'bold',
+  },
+  mutualBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    gap: Spacing.xs,
+  },
+  mutualText: {
+    fontSize: FontSizes.xs,
+    fontWeight: '600',
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginBottom: Spacing.md,
+  },
+  location: {
+    fontSize: FontSizes.sm,
+  },
+  bio: {
+    fontSize: FontSizes.md,
+    lineHeight: 22,
+  },
+  infoCard: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  cardTitle: {
+    fontSize: FontSizes.lg,
+    fontWeight: 'bold',
+    marginBottom: Spacing.md,
+  },
+  infoList: {
+    gap: Spacing.md,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  infoText: {
+    fontSize: FontSizes.md,
+    flex: 1,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
+    gap: Spacing.xl,
+    backgroundColor: 'transparent',
+  },
+  actionButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadows.heavy,
+  },
+  passButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  superLikeButton: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+  },
+  likeButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+});
